@@ -1,29 +1,26 @@
 const TelegramBot = require('node-telegram-bot-api');
 const QRCode = require('qrcode');
+require('dotenv').config();
 
-// Token dari environment variable (akan diatur di hosting)
 const token = process.env.TELEGRAM_BOT_TOKEN;
-
-// Buat instance bot
 const bot = new TelegramBot(token, { polling: true });
 
 console.log('🤖 Bot QR Code sedang berjalan...');
 
-// Handler untuk command /start
+// Handler untuk perintah /start
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
   const welcomeText = `
 🔄 *QR Code Generator Bot*
 
-Kirim saya teks, URL, nomor telepon, atau informasi lainnya, dan saya akan mengubahnya menjadi QR Code!
+Kirim saya teks, URL, nomor telepon, atau informasi lainnya, dan saya akan mengubahnya menjadi QR Code untuk Anda!
 
 ✨ *Contoh penggunaan:*
 • https://example.com
-• +62123456789
-• Halo, dunia!
-• contoh@email.com
+• Nomor telepon: +62123456789
+• Teks biasa: Halo, dunia!
 
-Coba kirim pesan teks sekarang! 🎯
+Bot siap menerima pesan Anda!
   `;
   
   bot.sendMessage(chatId, welcomeText, { 
@@ -38,24 +35,27 @@ Coba kirim pesan teks sekarang! 🎯
   });
 });
 
-// Handler untuk command /help
+// Handler untuk perintah /help
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
   const helpText = `
-📖 *Cara Menggunakan:*
+📖 *Cara Menggunakan Bot QR Code*
 
 1. *Kirim teks langsung* - Bot akan otomatis generate QR Code
-2. *Kirim URL* - Format lengkap (https://...)
+2. *Kirim URL* - Pastikan format lengkap (https://...)
 3. *Data lainnya* - Nomor telepon, email, teks biasa
 
-📝 *Format yang didukung:*
+📝 *Contoh format yang didukung:*
 • URL: https://example.com
 • Telepon: +62123456789  
 • Email: contoh@email.com
 • WiFi: WIFI:S:Network;T:WPA;P:Password;;
-• Teks biasa
+• Teks: Data apa saja
 
-Bot siap menerima pesan Anda! 🚀
+🛠 *Fitur:*
+• QR Code otomatis dari pesan
+• Download sebagai gambar
+• Support berbagai format data
   `;
   
   bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
@@ -75,7 +75,7 @@ bot.on('message', async (msg) => {
     // Kirim pesan "sedang memproses"
     const processingMsg = await bot.sendMessage(chatId, '🔄 Sedang membuat QR Code...');
 
-    // Generate QR Code
+    // Generate QR Code sebagai buffer
     const qrBuffer = await QRCode.toBuffer(userText, {
       width: 300,
       margin: 2,
@@ -91,19 +91,47 @@ bot.on('message', async (msg) => {
 
     // Kirim QR Code sebagai foto
     await bot.sendPhoto(chatId, qrBuffer, {
-      caption: `📲 QR Code untuk:\n\`${userText}\`\n\nScan dengan aplikasi QR scanner!`,
-      parse_mode: 'Markdown'
+      caption: `📲 QR Code untuk:\n\`${userText}\``,
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { 
+              text: '🔄 Buat Lagi', 
+              callback_data: 'generate_again' 
+            }
+          ]
+        ]
+      }
     });
 
   } catch (error) {
     console.error('Error:', error);
-    await bot.sendMessage(chatId, '❌ Maaf, terjadi kesalahan. Silakan coba lagi dengan teks yang berbeda.');
+    await bot.sendMessage(chatId, '❌ Maaf, terjadi kesalahan saat membuat QR Code. Silakan coba lagi dengan teks yang berbeda.');
   }
 });
 
-// Handler error
-bot.on('polling_error', (error) => {
-  console.error('Polling error:', error);
+// Handler untuk inline button
+bot.on('callback_query', async (callbackQuery) => {
+  const message = callbackQuery.message;
+  const chatId = message.chat.id;
+  const data = callbackQuery.data;
+
+  if (data === 'generate_again') {
+    await bot.sendMessage(chatId, '🔄 Silakan kirim teks baru untuk membuat QR Code lagi...');
+  }
+
+  // Jawab callback query
+  await bot.answerCallbackQuery(callbackQuery.id);
 });
 
-console.log('✅ Bot berhasil diinisialisasi dan siap menerima pesan!'); 
+// Handler error polling
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error.code);
+});
+
+// Handler untuk graceful shutdown
+process.once('SIGINT', () => bot.stopPolling());
+process.once('SIGTERM', () => bot.stopPolling());
+
+console.log('✅ Bot berhasil diinisialisasi');
