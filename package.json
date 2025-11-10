@@ -1,0 +1,16 @@
+{
+  "name": "telegram-qr-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot untuk generate QR Code",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.64.0",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
