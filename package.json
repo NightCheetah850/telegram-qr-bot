@@ -1,7 +1,7 @@
 {
   "name": "telegram-qr-bot",
-  "version": "2.0.0",
-  "description": "Telegram bot untuk generate QR Code dengan inline mode",
+  "version": "1.0.0",
+  "description": "Telegram bot untuk generate QR Code",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
